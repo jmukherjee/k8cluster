@@ -86,6 +86,8 @@ Vagrant.configure("2") do |config|
       kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
       kubeadm token create --print-join-command > /vagrant/join-#{ts}.sh
 
+      sleep 5
+
       echo "------------- Installing Dashboard + Nodeport -------------"
       kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.2.0/aio/deploy/recommended.yaml
       kubectl apply -f k8_db_nodeport.yaml
@@ -95,6 +97,7 @@ Vagrant.configure("2") do |config|
       kubectl create clusterrolebinding cluster-system-anonymous --clusterrole=cluster-admin --user=system:anonymous
       kubectl label nodes kslave01 kubernetes.io/role=worker
       kubectl proxy &
+      sleep 5
 
       echo "------------- Validating Cluster -------------"
       echo "External Link: https://#{IP_BASE}.10:30002/"
@@ -111,37 +114,37 @@ Vagrant.configure("2") do |config|
     SHELL
   end
 
-  # #-- Slave Node(s)
-  # (1..NODES_NUM).each do |i|
-  #   config.vm.define "kslave#{i}" do | k8s |
-  #     k8s.vm.hostname = "kslave#{i}"
-  #     k8s.vm.network "private_network", ip: "#{IP_BASE}.#{i + 10}"
-  #     k8s.vm.provider "virtualbox" do |vb|
-  #       vb.name = "kslave#{i}"
+  #-- Slave Node(s)
+  (1..NODES_NUM).each do |i|
+    config.vm.define "kslave#{i}" do | k8s |
+      k8s.vm.hostname = "kslave#{i}"
+      k8s.vm.network "private_network", ip: "#{IP_BASE}.#{i + 10}"
+      k8s.vm.provider "virtualbox" do |vb|
+        vb.name = "kslave#{i}"
   
-  #       vb.memory = "1024"
-  #       vb.cpus = 1
+        vb.memory = "1024"
+        vb.cpus = 1
   
-  #       vb.customize ["modifyvm", :id, "--ioapic", "on"]
-  #       vb.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
+        vb.customize ["modifyvm", :id, "--ioapic", "on"]
+        vb.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
   
-  #       # vb.gui = true
-  #       # vb.customize ["modifyvm", :id, "--graphicscontroller", "vboxvga"]
-  #       # vb.customize ["modifyvm", :id, "--vram", "64"]
-  #       # vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
-  #       # vb.customize ["modifyvm", :id, "--accelerate3d", "on"]
-  #     end
-  #     k8s.vm.provision "setup-hosts", :type => "shell", :path => "bootstrap-k8.sh" do |s|
-  #     end
-  #     k8s.vm.provision "shell", inline: <<-SHELL
-  #       apt-get install -y apache2
+        # vb.gui = true
+        # vb.customize ["modifyvm", :id, "--graphicscontroller", "vboxvga"]
+        # vb.customize ["modifyvm", :id, "--vram", "64"]
+        # vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
+        # vb.customize ["modifyvm", :id, "--accelerate3d", "on"]
+      end
+      k8s.vm.provision "setup-hosts", :type => "shell", :path => "bootstrap-k8.sh" do |s|
+      end
+      k8s.vm.provision "shell", inline: <<-SHELL
+        apt-get install -y apache2
   
-  #       echo "------------- Joining Cluster -------------"
-  #       chmod +x /vagrant/join-#{ts}.sh
-  #       bash /vagrant/join-#{ts}.sh
-  #       #kubectl label nodes kslave01 kubernetes.io/role=worker
-  #     SHELL
-  #   end
-  # end
+        echo "------------- Joining Cluster -------------"
+        chmod +x /vagrant/join-#{ts}.sh
+        bash /vagrant/join-#{ts}.sh
+        #kubectl label nodes kslave01 kubernetes.io/role=worker
+      SHELL
+    end
+  end
 end
 
