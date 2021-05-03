@@ -9,6 +9,8 @@ ADDR_LOCAL=127.0.0.1
 ADDR_INT=$(ifconfig enp0s3 | grep 'inet ' | xargs | cut -d " " -f 2)
 ADDR_EXT=$(ifconfig enp0s8 | grep 'inet ' | xargs | cut -d " " -f 2)
 
+HOST_NAME=$(hostname -s)
+
 echo "IFNAME: $IFNAME"
 echo "ADDR_INT: $ADDR_INT"
 echo "ADDR_EXT: $ADDR_EXT"
@@ -58,11 +60,17 @@ ctr version
 # curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 # apt-get install -y docker.io
 
+# run docker commands as vagrant user (sudo not required)
+usermod -aG docker vagrant
+
 echo "------------- Install OpenSSH -------------"
 #Install SSH Server
 apt-get install -y openssh-server
 systemctl status ssh
 systemctl enable ssh
+
+sed -i "/^[^#]*PasswordAuthentication[[:space:]]no/c\PasswordAuthentication yes" /etc/ssh/sshd_config
+systemctl restart ssh
 
 echo "------------- Install Kubernetes -------------"
 #Install Kubernetes
